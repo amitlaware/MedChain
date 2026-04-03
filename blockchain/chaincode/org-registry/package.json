@@ -1,0 +1,13 @@
+{
+  "name": "org-registry-chaincode",
+  "version": "1.0.0",
+  "description": "Dynamic org registry + cross-org EHR share requests",
+  "main": "index.js",
+  "scripts": {
+    "start": "node node_modules/.bin/fabric-shim start"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.5",
+    "fabric-shim": "^2.5.5"
+  }
+}
