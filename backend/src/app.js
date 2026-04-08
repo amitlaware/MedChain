@@ -46,11 +46,14 @@ app.get('/health', (req, res) => {
 });
 
 // ── API routes ─────────────────────────────────────────────────────────────
+const aiRoutes      = require('./routes/ai');
+
 app.use('/api/auth',    authRoutes);
 app.use('/api/ehr',     ehrRoutes);
 app.use('/api/access',  accessRoutes);
 app.use('/api/audit',   auditRoutes);
 app.use('/api/network', networkRoutes);
+app.use('/api/ai',      aiRoutes);
 
 // ── Global error handler ───────────────────────────────────────────────────
 app.use(errorHandler);

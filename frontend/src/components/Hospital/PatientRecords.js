@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ehrAPI, accessAPI } from '../../services/api';
 import AuditTrail from '../Shared/AuditTrail';
+import ChatBox from '../Shared/ChatBox';
 
 const TYPE_COLORS = {
   lab_result: 'blue', prescription: 'green', imaging_report: 'purple',
@@ -15,6 +16,7 @@ export default function PatientRecords() {
   const [error, setError]         = useState('');
   const [selected, setSelected]   = useState(null);
   const [showAudit, setShowAudit] = useState(false);
+  const [showChat, setShowChat]   = useState(false);
 
   const search = async () => {
     if (!patientId.trim()) return;
@@ -86,6 +88,11 @@ export default function PatientRecords() {
                       onClick={e => { e.stopPropagation(); setShowAudit(rec.ehrId); }}>
                 📜 Audit
               </button>
+              <button className="btn btn-sm btn-outline"
+                      onClick={e => { e.stopPropagation(); setShowChat(rec.ehrId); }}
+                      style={{ marginLeft: '8px' }}>
+                🤖 Ask AI
+              </button>
             </div>
           </div>
         ))}
@@ -99,6 +106,18 @@ export default function PatientRecords() {
               <button onClick={() => setShowAudit(false)}>✕</button>
             </div>
             <AuditTrail ehrId={showAudit} />
+          </div>
+        </div>
+      )}
+
+      {showChat && (
+        <div className="modal-overlay" onClick={() => setShowChat(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ minWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>Chat with Record — {showChat.slice(0, 12)}...</h3>
+              <button onClick={() => setShowChat(false)}>✕</button>
+            </div>
+            <ChatBox ehrId={showChat} onClose={() => setShowChat(false)} />
           </div>
         </div>
       )}

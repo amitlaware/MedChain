@@ -195,4 +195,16 @@ router.get('/me', authenticate, (req, res) => {
   res.json({ userId, email, role, orgMsp });
 });
 
+// ── GET /api/auth/patients ──────────────────────────────────────────────────────
+
+router.get('/patients', authenticate, (req, res) => {
+  const patientsList = [];
+  for (const [email, user] of users.entries()) {
+    if (user.role === 'patient') {
+      patientsList.push({ id: user.id, name: user.name, email: email });
+    }
+  }
+  res.json({ patients: patientsList });
+});
+
 module.exports = router;

@@ -1,6 +1,6 @@
 // frontend/src/components/Hospital/UploadEHR.js
-import { useState } from 'react';
-import { ehrAPI } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { ehrAPI, authAPI } from '../../services/api';
 
 const RECORD_TYPES = [
   'lab_result', 'prescription', 'imaging_report', 'discharge_summary',
@@ -16,6 +16,19 @@ export default function UploadEHR() {
   const [result, setResult]   = useState(null);
   const [error, setError]     = useState('');
   const [progress, setProgress] = useState(0);
+  const [patients, setPatients] = useState([]);
+
+  useEffect(() => {
+    async function fetchPatients() {
+      try {
+        const res = await authAPI.getPatients();
+        setPatients(res.patients || []);
+      } catch (err) {
+        console.error("Failed to load patients:", err);
+      }
+    }
+    fetchPatients();
+  }, []);
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -117,13 +130,20 @@ export default function UploadEHR() {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Patient ID *</label>
-            <input
-              type="text" required
+            <label>Patient *</label>
+            <select required
               value={form.patientId}
               onChange={e => setForm({...form, patientId: e.target.value})}
-              placeholder="patient-uuid or patient ID"
-            />
+            >
+              <option value="" disabled>-- Select a Patient --</option>
+              {patients.length > 0 ? (
+                patients.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+                ))
+              ) : (
+                <option value="" disabled>No patients registered</option>
+              )}
+            </select>
           </div>
           <div className="form-group">
             <label>Record Type *</label>

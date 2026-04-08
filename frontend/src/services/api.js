@@ -26,6 +26,7 @@ export const authAPI = {
   register: (body)   => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login:    (body)   => apiFetch('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
   me:       ()       => apiFetch('/auth/me'),
+  getPatients: ()    => apiFetch('/auth/patients'),
 };
 
 // ── EHR ───────────────────────────────────────────────────────────────────────
@@ -58,4 +59,9 @@ export const accessAPI = {
 // ── Audit ─────────────────────────────────────────────────────────────────────
 export const auditAPI = {
   getHistory: (ehrId) => apiFetch(`/audit/${ehrId}`),
+};
+
+// ── AI ────────────────────────────────────────────────────────────────────────
+export const aiAPI = {
+  chat: (ehrId, question) => apiFetch(`/ai/chat`, { method: 'POST', body: JSON.stringify({ ehrId, question }) }),
 };
