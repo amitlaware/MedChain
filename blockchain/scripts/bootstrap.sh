@@ -86,6 +86,22 @@ for PEER_ENV in \
   info "  $PEER joined channel."
 done
 
+info "Updating Anchor Peers..."
+for PEER_ENV in \
+  "peer0.hospital.ehr.com:7051:HospitalMSP:hospital" \
+  "peer0.doctor.ehr.com:8051:DoctorMSP:doctor" \
+  "peer0.patient.ehr.com:9051:PatientMSP:patient"; do
+
+  IFS=':' read -r PEER PORT MSP ORG <<< "$PEER_ENV"
+  docker exec \
+    -e CORE_PEER_ADDRESS=$PEER:$PORT \
+    -e CORE_PEER_LOCALMSPID=$MSP \
+    -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/$ORG.ehr.com/users/Admin@$ORG.ehr.com/msp \
+    -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/$ORG.ehr.com/peers/peer0.$ORG.ehr.com/tls/ca.crt \
+    cli peer channel update -o orderer.ehr.com:7050 -c ehr-channel -f /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/${MSP}anchors.tx --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/ehr.com/orderers/orderer.ehr.com/msp/tlscacerts/tlsca.ehr.com-cert.pem
+  info "  Updated anchor peers for $MSP."
+done
+
 # ── Step 7: Install chaincode ────────────────────────────────
 info "Step 7: Installing chaincode on all peers..."
 docker exec cli peer lifecycle chaincode package ehr-chaincode.tar.gz \
@@ -148,6 +164,9 @@ docker exec cli peer lifecycle chaincode commit \
   --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/doctor.ehr.com/peers/peer0.doctor.ehr.com/tls/ca.crt \
   --peerAddresses peer0.patient.ehr.com:9051 \
   --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/patient.ehr.com/peers/peer0.patient.ehr.com/tls/ca.crt
+
+info "Step 9: Generating Connection Profile for Node.js Application..."
+node generate_ccp.js
 
 info ""
 info "═══════════════════════════════════════════════════════"

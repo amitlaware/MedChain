@@ -45,10 +45,10 @@ export default function HospitalDashboard() {
         {activeTab === 'Overview' && (
           <div>
             <div className="stats-grid">
-              <StatsCard label="Total EHR Records" value={stats.records} icon="📋" color="blue" />
-              <StatsCard label="Registered Patients" value={stats.patients} icon="👥" color="green" />
-              <StatsCard label="Active Doctors" value={stats.doctors} icon="🩺" color="purple" />
-              <StatsCard label="Pending Requests" value={stats.pending} icon="⏳" color="amber" />
+              <StatsCard label="Total EHR Records" value={stats.records} icon="📋" color="blue" onClick={() => setActiveTab('Patient Records')} />
+              <StatsCard label="Registered Patients" value={stats.patients} icon="👥" color="green" onClick={() => setActiveTab('Patient Records')} />
+              <StatsCard label="Active Doctors" value={stats.doctors} icon="🩺" color="purple" onClick={() => setActiveTab('Network Registry')} />
+              <StatsCard label="Pending Requests" value={stats.pending} icon="⏳" color="amber" onClick={() => setActiveTab('Access Manager')} />
             </div>
             <div className="info-card">
               <h3>Quick Actions</h3>

@@ -4,7 +4,7 @@
   "description": "EHR Smart Contract for Hyperledger Fabric",
   "main": "index.js",
   "scripts": {
-    "start": "node node_modules/.bin/fabric-shim start"
+    "start": "fabric-chaincode-node start"
   },
   "dependencies": {
     "fabric-contract-api": "^2.5.5",

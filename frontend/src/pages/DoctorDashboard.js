@@ -40,10 +40,10 @@ export default function DoctorDashboard() {
         {activeTab === 'Overview' && (
           <div>
             <div className="stats-grid">
-              <StatsCard label="My Patients"     value={24}  icon="👥" color="blue"   />
-              <StatsCard label="Records Accessed" value={87} icon="📂" color="green"  />
-              <StatsCard label="Notes Uploaded"  value={31}  icon="📝" color="purple" />
-              <StatsCard label="Access Requests" value={3}   icon="🔑" color="amber"  />
+              <StatsCard label="My Patients"     value={24}  icon="👥" color="blue"   onClick={() => setActiveTab('Patient Records')} />
+              <StatsCard label="Records Accessed" value={87} icon="📂" color="green"  onClick={() => setActiveTab('Patient Records')} />
+              <StatsCard label="Notes Uploaded"  value={31}  icon="📝" color="purple" onClick={() => setActiveTab('Upload Note')} />
+              <StatsCard label="Access Requests" value={3}   icon="🔑" color="amber"  onClick={() => setActiveTab('Access Manager')} />
             </div>
             <div className="info-card">
               <h3>My Patients Today</h3>

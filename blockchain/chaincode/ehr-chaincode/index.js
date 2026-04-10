@@ -326,4 +326,5 @@ class EHRContract extends Contract {
   }
 }
 
-module.exports = EHRContract;
+module.exports.EHRContract = EHRContract;
+module.exports.contracts = [EHRContract];

@@ -88,8 +88,35 @@ class StorageService {
   async uploadToIPFS(fileBuffer) {
     const { encryptedBuffer, key, iv, authTag } = encryptBuffer(fileBuffer);
 
-    const { cid } = await this.ipfs.add(encryptedBuffer, { pin: true });
-    const ipfsHash = cid.toString();
+    // Bypassing ipfs-http-client bug by using raw fetch with explicitly defined duplex
+    const formData = new FormData();
+    formData.append('file', new Blob([encryptedBuffer]));
+
+    const host = process.env.IPFS_HOST || 'localhost';
+    const port = process.env.IPFS_PORT || '5001';
+    const proto = process.env.IPFS_PROTO || 'http';
+    const apiUrl = `${proto}://${host}:${port}/api/v0/add?pin=true`;
+
+    const headers = {};
+    if (process.env.IPFS_PROJECT_ID) {
+      headers['authorization'] = 'Basic ' + Buffer.from(
+        `${process.env.IPFS_PROJECT_ID}:${process.env.IPFS_PROJECT_SECRET}`
+      ).toString('base64');
+    }
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: formData,
+      headers,
+      duplex: 'half' // This is the crucial fix for Node 18+
+    });
+
+    if (!response.ok) {
+      throw new Error(`IPFS add failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const ipfsHash = data.Hash;
 
     return {
       ipfsHash,
