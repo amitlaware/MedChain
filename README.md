@@ -12,28 +12,26 @@ audit trail.
 ┌─────────────────────────────────────────────┐
 │  Frontend (React.js)                        │
 │  Hospital | Doctor | Patient Dashboards     │
+│  + AI "Chat with Record" UI                 │
 └────────────┬────────────────────────────────┘
              │ HTTPS / REST
 ┌────────────▼────────────────────────────────┐
 │  Backend (Node.js / Express)                │
-│  Auth · EHR · Access · Audit APIs           │
-└────────────┬────────────────────────────────┘
-             │ Fabric SDK (fabric-network)
-┌────────────▼────────────────────────────────┐
-│  Hyperledger Fabric Network                 │
-│  ┌──────────────────────────────────────┐  │
-│  │  ehr-channel                          │  │
-│  │  HospitalOrg │ DoctorOrg │ PatientOrg │  │
-│  │  Chaincode: ehr-chaincode             │  │
-│  │  Endorsement: 2-of-3 orgs            │  │
-│  └──────────────────────────────────────┘  │
-│  Orderer (Raft consensus)                   │
-└────────────┬────────────────────────────────┘
-             │ IPFS hash only (on-chain)
-┌────────────▼────────────────────────────────┐
-│  Off-chain Storage                          │
+│  Auth · EHR · Access · Audit · AI Chat APIs │
+└─────────┬───────────────────────┬───────────┘
+          │ (Fabric SDK)          │ (LLaMA 3.2 via @huggingface/inference)
+┌─────────▼────────────────┐   ┌──▼─────────────────────────────┐
+│  Hyperledger Fabric      │   │  HuggingFace Serverless API    │
+│  (ehr-chaincode)         │   │  - meta-llama/Llama-3.2-1B     │
+│  - HospitalOrg           │   │  - pdf-parse (Text Extraction) │
+│  - DoctorOrg             │   └────────────────────────────────┘
+│  - PatientOrg            │
+└─────────┬────────────────┘
+          │ IPFS hash only (on-chain)
+┌─────────▼────────────────────────────────┐
+│  Off-chain Storage                         │
 │  IPFS (encrypted files) + AWS S3 (backup)  │
-└─────────────────────────────────────────────┘
+└────────────────────────────────────────────┘
 ```
 
 ---
@@ -148,6 +146,7 @@ cd backend
 # Copy and configure environment variables
 cp .env.example .env
 # Edit .env — set JWT_SECRET at minimum
+# For AI Chat: Add HUGGINGFACE_API_KEY=hf_your_inference_token (Check "Make calls to Inference Providers" when creating it)
 
 npm install
 npm run dev
@@ -185,6 +184,16 @@ npm start
 6. Log in as Patient → grant doctor access to that EHR
 7. Log in as Doctor → view and download the decrypted record
 8. Check Audit Trail → see every action immutably logged on-chain
+
+---
+
+## 🤖 AI Smart Chat Integration
+
+Doctors and patients can leverage the **"Chat with Record"** button inside the web UI to interact with medical documents naturally.
+
+1. **Native PDF Parsing:** When a PDF is opened in the chat, the backend uses `pdf-parse` to completely extract the local raw text locally without sending binary PDF files back and forth over the network.
+2. **Serverless Meta LLaMA Inference:** The extracted text is attached securely to a clinical prompt, which is streamed contextually to **Meta's Llama-3.2-1B-Instruct** model via the `@huggingface/inference` SDK.
+3. **Data Privacy Focus:** Only decrypted text files natively stored behind your identity access layers are ever passed to the LLM context module. It acts strictly as a specialized clinical extraction assistant.
 
 ---
 
