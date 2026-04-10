@@ -29,11 +29,29 @@ class EHRContract extends Contract {
   _caller(ctx) {
     // Returns { mspId, id, role } from the client identity
     const cid = ctx.clientIdentity;
+    let role = cid.getAttributeValue('role');
+    
+    // Fallback: If wallet bypassed CA and imported static MSP certs, role will be undefined/unknown.
+    // In that case, map the mspId directly to the expected role.
+    if (!role || role === 'unknown') {
+      const mspId = cid.getMSPID();
+      if (mspId === 'HospitalMSP') role = 'hospital';
+      else if (mspId === 'DoctorMSP') role = 'doctor';
+      else if (mspId === 'PatientMSP') role = 'patient';
+      else role = 'unknown';
+    }
+
     return {
       mspId: cid.getMSPID(),
       id:    cid.getID(),
-      role:  cid.getAttributeValue('role') || 'unknown',
+      role:  role,
     };
+  }
+
+  _getTxDate(ctx) {
+    const ts = ctx.stub.getTxTimestamp();
+    const seconds = ts.seconds.low !== undefined ? ts.seconds.low : ts.seconds;
+    return new Date(seconds * 1000).toISOString();
   }
 
   // ─── 1. Upload EHR ────────────────────────────────────────────────────────
@@ -62,7 +80,7 @@ class EHRContract extends Contract {
       throw new Error(`EHR ${ehrId} already exists`);
     }
 
-    const now = new Date().toISOString();
+    const now = this._getTxDate(ctx);
     const ehr = {
       ehrId,
       patientId,
@@ -135,7 +153,7 @@ class EHRContract extends Contract {
     }
 
     const accessKey = `ACCESS:${ehrId}:${requesterId}`;
-    const now = new Date().toISOString();
+    const now = this._getTxDate(ctx);
 
     const grant = {
       ehrId,
@@ -173,7 +191,7 @@ class EHRContract extends Contract {
     if (!grant) throw new Error(`No active grant found for ${requesterId} on ${ehrId}`);
 
     grant.active = false;
-    grant.revokedAt = new Date().toISOString();
+    grant.revokedAt = this._getTxDate(ctx);
     grant.revokedBy = caller.id;
 
     await this._putState(ctx, accessKey, grant);
@@ -243,7 +261,7 @@ class EHRContract extends Contract {
     const accessKey = `ACCESS:${ehrId}:${requesterId}`;
     const grant = await this._getState(ctx, accessKey);
     if (!grant || !grant.active) return JSON.stringify({ hasAccess: false });
-    if (grant.expiresAt && new Date(grant.expiresAt) <= new Date()) {
+    if (grant.expiresAt && new Date(grant.expiresAt) <= new Date(this._getTxDate(ctx))) {
       return JSON.stringify({ hasAccess: false, reason: 'expired' });
     }
     return JSON.stringify({ hasAccess: true, grant });
@@ -273,7 +291,7 @@ class EHRContract extends Contract {
       const h = result.value;
       history.push({
         txId:      h.txId,
-        timestamp: new Date(h.timestamp.seconds.low * 1000).toISOString(),
+        timestamp: new Date((h.timestamp.seconds.low !== undefined ? h.timestamp.seconds.low : h.timestamp.seconds) * 1000).toISOString(),
         isDelete:  h.isDelete,
         value:     h.value ? JSON.parse(h.value.toString()) : null,
       });
@@ -297,9 +315,9 @@ class EHRContract extends Contract {
     }
 
     ehr.status = 'deleted';
-    ehr.deletedAt = new Date().toISOString();
+    ehr.deletedAt = this._getTxDate(ctx);
     ehr.deletedBy = caller.id;
-    ehr.updatedAt = new Date().toISOString();
+    ehr.updatedAt = this._getTxDate(ctx);
 
     await this._putState(ctx, `EHR:${ehrId}`, ehr);
     await this._appendLog(ctx, ehrId, caller, 'DELETE', `Record soft-deleted`);
@@ -320,7 +338,7 @@ class EHRContract extends Contract {
       actorOrg:  caller.mspId,
       actorRole: caller.role,
       txId,
-      timestamp: new Date().toISOString(),
+      timestamp: this._getTxDate(ctx),
     };
     await this._putState(ctx, logKey, log);
   }

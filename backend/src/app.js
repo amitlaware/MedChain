@@ -1,5 +1,6 @@
 // backend/src/app.js
 // Main Express application entry point
+require('dotenv').config();
 
 const express  = require('express');
 const cors     = require('cors');

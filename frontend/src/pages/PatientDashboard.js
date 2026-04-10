@@ -28,6 +28,9 @@ export default function PatientDashboard() {
         <div>
           <h1 className="dashboard-title">Patient Portal</h1>
           <p className="dashboard-subtitle">{user?.name || user?.email} · Your health records, under your control</p>
+          <p className="dashboard-subtitle" style={{marginTop: '4px', fontSize: '0.9rem'}}>
+            <strong>Your Patient ID:</strong> <code style={{background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px'}}>{user?.userId}</code>
+          </p>
         </div>
         <span className="role-badge role-patient">Patient</span>
       </div>

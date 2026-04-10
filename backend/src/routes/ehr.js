@@ -109,8 +109,11 @@ router.get('/:ehrId/download', authenticate, async (req, res, next) => {
     const encryptionMeta = JSON.parse(ehr.encKey);
     const fileBuffer = await storage.downloadFromIPFS(ehr.ipfsHash, encryptionMeta);
 
-    res.set('Content-Disposition', `attachment; filename="${ehrId}.file"`);
-    res.set('Content-Type', 'application/octet-stream');
+    const filename = ehr.metadata?.fileName || `${ehrId}.file`;
+    const mimeType = ehr.metadata?.mimeType || 'application/octet-stream';
+
+    res.set('Content-Disposition', `attachment; filename="${filename}"`);
+    res.set('Content-Type', mimeType);
     res.send(fileBuffer);
   } catch (err) {
     next(err);
