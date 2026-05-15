@@ -1,316 +1,380 @@
-# ⛓️ MedChain — Blockchain-Based Smart Healthcare System
+# EHR Blockchain System
 
-A production-oriented Electronic Health Record (EHR) system built on **Hyperledger Fabric**,
-featuring encrypted off-chain storage (IPFS/S3), role-based access control, and an immutable
-audit trail.
+A sample Electronic Health Record (EHR) system that demonstrates storing encrypted patient medical records on IPFS, managing metadata and permissions on Hyperledger Fabric, and persisting metadata in MongoDB. Includes a React frontend and Node.js/Express backend with Fabric integration.
 
 ---
 
-## 📐 Architecture Overview
+## Project Overview
 
-```
-┌─────────────────────────────────────────────┐
-│  Frontend (React.js)                        │
-│  Hospital | Doctor | Patient Dashboards     │
-│  + AI "Chat with Record" UI                 │
-└────────────┬────────────────────────────────┘
-             │ HTTPS / REST
-┌────────────▼────────────────────────────────┐
-│  Backend (Node.js / Express)                │
-│  Auth · EHR · Access · Audit · AI Chat APIs │
-└─────────┬───────────────────────┬───────────┘
-          │ (Fabric SDK)          │ (LLaMA 3.2 via @huggingface/inference)
-┌─────────▼────────────────┐   ┌──▼─────────────────────────────┐
-│  Hyperledger Fabric      │   │  HuggingFace Serverless API    │
-│  (ehr-chaincode)         │   │  - meta-llama/Llama-3.2-1B     │
-│  - HospitalOrg           │   │  - pdf-parse (Text Extraction) │
-│  - DoctorOrg             │   └────────────────────────────────┘
-│  - PatientOrg            │
-└─────────┬────────────────┘
-          │ IPFS hash only (on-chain)
-┌─────────▼────────────────────────────────┐
-│  Off-chain Storage                         │
-│  IPFS (encrypted files) + AWS S3 (backup)  │
-└────────────────────────────────────────────┘
-```
+- Purpose: secure, auditable sharing of patient medical records between hospitals and doctors using IPFS for storage and Hyperledger Fabric for access control and audit logging.
+- Key features:
+  - Upload PDF medical records (client-side → backend)
+  - AES-256-GCM encryption of PDFs before storing on IPFS
+  - File CID and permissions stored on Hyperledger Fabric chaincode
+  - Metadata stored in MongoDB for quick queries
+  - Role-based access control: patients, doctors, admin
+  - Patient-managed grant/revoke access workflows
+  - Transfer request flow for moving records between hospitals
 
----
+  ### Access expiry and permission shape
 
-## 📁 Folder Structure
+  Permissions now support structured entries with optional expiry and granular flags. Example permission object stored on Fabric and in MongoDB:
 
-```
-smart-healthcare/
-├── blockchain/
-│   ├── chaincode/
-│   │   └── ehr-chaincode/
-│   │       ├── index.js          ← Smart contract (all EHR logic)
-│   │       └── package.json
-│   ├── config/
-│   │   ├── crypto-config.yaml   ← Org/peer/CA definitions
-│   │   └── configtx.yaml        ← Channel + endorsement policy
-│   ├── scripts/
-│   │   └── bootstrap.sh         ← One-command network setup
-│   └── docker-compose.yaml      ← All Fabric services
-│
-├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   │   ├── auth.js          ← Register/login + Fabric CA enrollment
-│   │   │   ├── ehr.js           ← Upload/view/download records
-│   │   │   ├── access.js        ← Grant/revoke permissions
-│   │   │   └── audit.js         ← Audit trail queries
-│   │   ├── services/
-│   │   │   ├── fabricService.js ← Fabric SDK wrapper
-│   │   │   └── storageService.js← IPFS + S3 with AES-256-GCM encryption
-│   │   ├── middleware/
-│   │   │   └── auth.js          ← JWT verify + RBAC
-│   │   └── app.js               ← Express entry point
-│   ├── wallet/                  ← Fabric identities (auto-generated)
-│   ├── .env.example
-│   └── package.json
-│
-└── frontend/
-    └── src/
-        ├── pages/
-        │   ├── HospitalDashboard.js
-        │   ├── DoctorDashboard.js
-        │   ├── PatientDashboard.js
-        │   ├── LoginPage.js
-        │   └── RegisterPage.js
-        ├── components/
-        │   ├── Hospital/
-        │   │   ├── UploadEHR.js
-        │   │   └── PatientRecords.js
-        │   ├── Patient/
-        │   │   └── MyRecords.js
-        │   └── Shared/
-        │       ├── AccessManager.js
-        │       ├── AuditTrail.js
-        │       ├── Navbar.js
-        │       └── StatsCard.js
-        ├── services/api.js       ← All HTTP calls
-        ├── context/AuthContext.js
-        ├── App.js
-        ├── App.css
-        └── package.json
-```
+  ```json
+  {
+    "doctorId": "D1",
+    "canView": true,
+    "expires": "2026-06-01T00:00:00.000Z"
+  }
+  ```
+
+  When granting access you may provide `canView` (boolean) and `expires` (ISO date). The backend and chaincode will enforce expiry when evaluating access.
+
+  ### Access audit trail
+
+  Chaincode now records every record read in an `accessLogs` array on the `record` object. Each entry includes the `actor` (blockchain identity that requested the read) and a `timestamp` (ISO). Example:
+
+  ```json
+  {
+    "actor": "x509::/CN=doctor1::/C=US/ST=...",
+    "timestamp": "2026-05-08T12:34:56.789Z"
+  }
+  ```
+
+  An audit log entry (`READ_RECORD`) is also stored using the existing audit log mechanism. This provides an immutable trail of who accessed which records and when.
+
+  ### File integrity (SHA-256)
+
+  For additional data integrity assurance, the backend computes a SHA-256 hash of the original PDF at upload time and the hash is stored on-chain with the record. When a doctor downloads and the backend decrypts the file from IPFS, the backend re-computes the SHA-256 and verifies it matches the on-chain `fileHash`. If the hashes differ the backend rejects the download with an integrity error.
+
+  This ensures that even if IPFS content were tampered with or corrupted, mismatch will be detected using the on-ledger hash.
 
 ---
 
-## 🚀 Deployment Guide — Step by Step
+## Architecture
 
-### Prerequisites
+- Frontend: React + Vite (SPA)
+- Backend: Node.js, Express — handles auth, file uploads (multer), encryption, IPFS interaction, Fabric gateway calls, MongoDB persistence
+- Storage: IPFS (encrypted payloads)
+- Ledger: Hyperledger Fabric chaincode (chaincode located at `chaincode/ehr/ehr-contract.js`)
+- Database: MongoDB (metadata), CouchDB (optional for Fabric state database)
+- Local dev orchestrator: Docker Compose (MongoDB + CouchDB + backend + frontend)
 
-| Tool | Version | Install |
-|------|---------|---------|
-| Docker | ≥ 24 | https://docs.docker.com/get-docker/ |
-| Docker Compose | ≥ 2.20 | Included with Docker Desktop |
-| Node.js | ≥ 18 | https://nodejs.org |
-| Fabric binaries | 2.5 | See below |
+Important: Blockchain is the source of truth. MongoDB is used only as a cache and for query optimization. The backend always validates permissions and record existence against Hyperledger Fabric before serving or authorizing access.
 
-### Step 1 — Install Hyperledger Fabric Binaries
+Diagram (high level):
 
-```bash
-# Downloads cryptogen, configtxgen, peer, etc. into ./bin and ./config
-curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.5.5 1.5.7
-export PATH=$PWD/bin:$PATH
-```
+Client (React) → Backend API → IPFS (encrypted) + Fabric (metadata/permissions) + MongoDB (metadata)
 
-### Step 2 — Start the Fabric Network
+---
 
-```bash
-cd blockchain
+## Repo layout
 
-# Make script executable
-chmod +x scripts/bootstrap.sh
+- `backend/` — Express API, Fabric, IPFS helpers, models, controllers
+- `frontend/` — React app
+- `chaincode/` — Hyperledger Fabric chaincode source
+- `docs/` — setup guides (Fabric, IPFS)
+- `docker-compose.yml` — local Docker Compose for MongoDB/CouchDB/backend/frontend
 
-# This single script:
-#  1. Generates crypto material (certs, keys) for all 3 orgs
-#  2. Creates genesis block and channel tx
-#  3. Starts all Docker containers (CAs, peers, orderer)
-#  4. Creates and joins ehr-channel
-#  5. Packages, installs, approves, and commits chaincode
-./scripts/bootstrap.sh
-```
+---
 
-Expected output at the end:
-```
-[INFO] Network is UP. Chaincode deployed on ehr-channel.
-```
+## Installation (local dev, prerequisites)
 
-### Step 3 — Start the Backend
+Prerequisites:
+- Node.js 18+ and npm
+- Docker and Docker Compose (for services)
+- (Optional) WSL2 on Windows for Fabric local network
+
+Clone the repo and install dependencies:
 
 ```bash
+git clone <repo-url>
+cd ehr-system
+
+# backend deps
 cd backend
-
-# Copy and configure environment variables
-cp .env.example .env
-# Edit .env — set JWT_SECRET at minimum
-# For AI Chat: Add HUGGINGFACE_API_KEY=hf_your_inference_token (Check "Make calls to Inference Providers" when creating it)
-
 npm install
-npm run dev
-# Server running on http://localhost:4000
+
+# frontend deps
+cd ../frontend
+npm install
 ```
 
-### Step 4 — Start IPFS (local node)
+---
+
+## WSL2 setup (Windows users)
+
+If you're on Windows, using WSL2 improves compatibility with Fabric and Docker. See the detailed guide in **docs/fabric-wsl2-setup.md** for step-by-step instructions to enable WSL2, install required packages, and configure Docker to work with WSL.
+
+- Open: [docs/fabric-wsl2-setup.md](docs/fabric-wsl2-setup.md)
+
+---
+
+## Docker setup
+
+This repository includes a `docker-compose.yml` to run MongoDB, CouchDB, the backend, and the frontend dev server.
+
+1. Copy the environment example and edit values:
 
 ```bash
-# Install Kubo (IPFS implementation)
-# macOS:  brew install ipfs
-# Linux:  https://docs.ipfs.tech/install/command-line/
-
-ipfs init
-ipfs daemon
-# IPFS API listening on /ip4/127.0.0.1/tcp/5001
+cp .env.example .env
+# Edit .env: set strong passwords and IPFS_ENCRYPTION_KEY
 ```
 
-### Step 5 — Start the Frontend
+2. Start services:
+
+```bash
+docker compose up --build
+```
+
+Services after startup:
+- MongoDB: `mongodb://localhost:27017`
+- CouchDB: `http://localhost:5984`
+- Backend API: `http://localhost:5000`
+- Frontend (Vite dev): `http://localhost:5173`
+
+Notes:
+- The Fabric test-network is not containerized here — run Fabric locally (see Hyperledger section) and ensure the backend has access to the Fabric connection profile and wallet.
+- For production, replace the Vite dev server with a built static frontend.
+
+---
+
+## Hyperledger Fabric setup (local test network)
+
+We do not containerize Fabric as part of the compose; use Fabric samples or your own test-network. Basic steps:
+
+1. Install prerequisites: Docker, Docker Compose, Node.js, Go, and Fabric binaries. See Fabric docs.
+2. From your Fabric samples repository (or local scripts), start a test-network and create a channel.
+3. Install and instantiate the chaincode located at `chaincode/ehr`.
+4. Ensure backend has the connection profile and wallet entries expected by `backend/fabric/*` helpers. You can mount those files into the backend container or run backend on host with access to them.
+
+See the project's Fabric guide: `docs/fabric-wsl2-setup.md` for tips and commands used during development.
+
+### Fabric Certificate Authority (CA) — identities and X.509 certs (important)
+
+Hyperledger Fabric issues and manages identities using X.509 certificates. For a secure, auditable EHR system each participant (patient, doctor, hospital, admin) should have a distinct blockchain identity issued by a Fabric Certificate Authority (CA). The backend relies on wallet credentials (private keys and certs) that are derived from these identities — you must provision them before attempting ledger transactions.
+
+We recommend using Fabric CA (fabric-ca) and the `fabric-ca-client` CLI to register and enroll identities. Typical workflow:
+
+1. Start a Fabric CA server (may be included in your test-network or run separately).
+2. Use the CA admin identity to `register` accounts for doctors/patients/hospitals.
+3. `enroll` each account to obtain the X.509 certificate and private key, then store them in a wallet directory the backend can access.
+
+Example `fabric-ca-client` commands (replace hostnames, ports, and CA name as configured in your network):
+
+```bash
+# export CA server and wallet paths
+export FABRIC_CA_CLIENT_HOME=$PWD/fabric-ca-client
+
+# enroll the CA admin (first-time setup)
+fabric-ca-client enroll -u http://admin:adminpw@localhost:7054 --caname ca.example.com -M $FABRIC_CA_CLIENT_HOME/admin/msp
+
+# register a doctor identity (admin registers the user)
+fabric-ca-client register --id.name doctor1 --id.secret doctor1pw --id.type client -u http://localhost:7054 --caname ca.example.com
+
+# enroll the doctor to create certs/keys in a wallet location
+fabric-ca-client enroll -u http://doctor1:doctor1pw@localhost:7054 --caname ca.example.com -M $FABRIC_CA_CLIENT_HOME/doctor1/msp
+
+# If TLS is enabled on the CA, include the CA cert file
+# fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca.example.com -M ./wallet/admin/msp --tls.certfiles /path/to/ca-cert.pem
+```
+
+Wallet & backend integration
+- Place the enrolled identities (certs and keys) into a wallet directory that the backend `gateway` code expects (see `backend/fabric/wallet.js`). Common layout:
+
+```
+backend/fabric/wallet/
+  admin/
+    msp/        # contains signcerts and keystore
+  doctor1/
+    msp/
+  patient1/
+    msp/
+```
+
+- When running the backend container, mount the wallet and connection profile into the container so the app can load identities and connect to the Fabric gateway. Example `docker-compose` volume snippet (not exhaustive):
+
+```yaml
+services:
+  backend:
+    volumes:
+      - ./backend/fabric/wallet:/app/backend/fabric/wallet:ro
+      - ./backend/fabric/connectionProfile.yaml:/app/backend/fabric/connectionProfile.yaml:ro
+```
+
+Security notes
+- Keep private keys and wallet directories secure — do not commit them to version control.
+- In production, consider a secure secrets manager or HSM for private key storage and signing operations.
+
+
+---
+
+## IPFS setup
+
+This project expects an IPFS HTTP client (configured in `backend/ipfs/ipfsClient.js`). For local testing, you can run an IPFS node (kubo) locally. See `docs/ipfs-kubo-setup.md` for instructions to install and run Kubo locally.
+
+Important: `IPFS_ENCRYPTION_KEY` environment variable must be set (64-hex string or passphrase). It's used by `backend/ipfs/encryption.js`.
+
+---
+
+## MongoDB setup
+
+When using Docker Compose the `mongo` service will initialize with admin credentials set in `.env`. The backend uses `MONGODB_URI` (configured in `docker-compose.yml`) to connect.
+
+If running MongoDB locally instead of Docker, set `MONGODB_URI` environment variable to the correct connection string.
+
+---
+
+## Frontend setup
+
+Development:
 
 ```bash
 cd frontend
 npm install
-npm start
-# React app running on http://localhost:3000
+npm run dev
 ```
 
-### Step 6 — Test the System
-
-1. Open http://localhost:3000
-2. Register as **Hospital Admin** → gets enrolled in HospitalMSP CA
-3. Register as **Doctor** → enrolled in DoctorMSP CA  
-4. Register as **Patient** → enrolled in PatientMSP CA
-5. Log in as Hospital → upload a PDF lab report for the patient
-6. Log in as Patient → grant doctor access to that EHR
-7. Log in as Doctor → view and download the decrypted record
-8. Check Audit Trail → see every action immutably logged on-chain
-
----
-
-## 🤖 AI Smart Chat Integration
-
-Doctors and patients can leverage the **"Chat with Record"** button inside the web UI to interact with medical documents naturally.
-
-1. **Native PDF Parsing:** When a PDF is opened in the chat, the backend uses `pdf-parse` to completely extract the local raw text locally without sending binary PDF files back and forth over the network.
-2. **Serverless Meta LLaMA Inference:** The extracted text is attached securely to a clinical prompt, which is streamed contextually to **Meta's Llama-3.2-1B-Instruct** model via the `@huggingface/inference` SDK.
-3. **Data Privacy Focus:** Only decrypted text files natively stored behind your identity access layers are ever passed to the LLM context module. It acts strictly as a specialized clinical extraction assistant.
-
----
-
-## 🔐 Security Architecture
-
-### Encryption Flow
-
-```
-File Upload:
-  Browser → AES-256-GCM encrypt → IPFS (encrypted bytes)
-                                → Blockchain (IPFS hash + enc key)
-
-File Download:
-  Blockchain (verify access) → IPFS (get encrypted bytes) → AES-256-GCM decrypt → User
-```
-
-### Key Management
-- Each file is encrypted with a unique AES-256-GCM key
-- In production: the symmetric key is encrypted with the **patient's RSA/EC public key**
-- Only the patient can decrypt the key → only they control who can read it
-- Key rotation: re-encrypt with new key and update on-chain
-
-### Role-Based Access Control
-
-| Action | Hospital | Doctor | Patient |
-|--------|----------|--------|---------|
-| Upload EHR | ✅ | ✅ | ❌ |
-| View EHR | ✅ if uploaded | ✅ if granted | ✅ own records |
-| Grant Access | ✅ (own records) | ❌ | ✅ (own records) |
-| Revoke Access | ✅ | ❌ | ✅ |
-| View Audit Trail | ✅ | ❌ | ✅ |
-| Delete EHR | ✅ (soft delete) | ❌ | ❌ |
-
-### Digital Signatures
-- Every Fabric transaction is **digitally signed** by the submitter's X.509 certificate
-- Certificates issued by org-specific **Fabric CAs** — not self-signed
-- MSP (Membership Service Provider) verifies identity on every chaincode call
-
----
-
-## 🧪 Sample API Calls
+Build for production:
 
 ```bash
-# Register
-curl -X POST http://localhost:4000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Dr. Ravi","email":"ravi@hospital.com","password":"securepass","role":"doctor"}'
-
-# Login
-TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"ravi@hospital.com","password":"securepass"}' | jq -r .token)
-
-# Upload EHR
-curl -X POST http://localhost:4000/api/ehr/upload \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@/path/to/report.pdf" \
-  -F "patientId=patient-123" \
-  -F "recordType=lab_result"
-
-# Grant access to a doctor
-curl -X POST http://localhost:4000/api/access/grant \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"ehrId":"<ehr-uuid>","requesterId":"ravi@hospital.com_doctor","requesterOrg":"DoctorMSP"}'
-
-# View audit trail
-curl http://localhost:4000/api/audit/<ehr-uuid> \
-  -H "Authorization: Bearer $TOKEN"
+npm run build
+# serve build directory with a static server (e.g. serve or nginx)
 ```
 
----
-
-## 📦 Production Checklist
-
-- [ ] Replace file-system wallet with **HSM-backed wallet** (e.g., AWS CloudHSM)
-- [ ] Replace in-memory user store with **PostgreSQL** or **MongoDB**
-- [ ] Implement **RSA/ECIES** encryption of AES keys with patient's public key
-- [ ] Add **TLS termination** with NGINX reverse proxy
-- [ ] Set up **Prometheus + Grafana** for Fabric metrics
-- [ ] Configure **multi-orderer Raft** (3+ orderers) for HA
-- [ ] Enable **Fabric private data collections** for ultra-sensitive fields
-- [ ] Implement **key rotation** and **certificate renewal** automation
-- [ ] Add **multi-factor authentication** for hospital admins
-- [ ] Set up **audit log archival** to immutable S3 (Object Lock)
+The frontend reads `VITE_API_URL` (default `http://localhost:5000/api`) to communicate with the backend. Set this value in `.env` or via the Docker Compose environment.
 
 ---
 
-## 🤝 Organizations and Channels
+## Backend setup
 
-| Organization | MSP ID | Port | Role |
-|-------------|--------|------|------|
-| HospitalOrg | HospitalMSP | 7051 | Upload EHRs, manage access |
-| DoctorOrg   | DoctorMSP   | 8051 | View/upload clinical notes |
-| PatientOrg  | PatientMSP  | 9051 | View own records, control access |
-| Orderer     | OrdererMSP  | 7050 | Raft consensus, block ordering |
-
-**Channel:** `ehr-channel` — all 3 orgs participate  
-**Endorsement Policy:** 2-of-3 orgs must endorse every transaction
-
----
-
-## 🛠️ Troubleshooting
+Run locally for development (nodemon recommended):
 
 ```bash
-# Check all containers are running
-docker ps
-
-# View peer logs
-docker logs peer0.hospital.ehr.com
-
-# Chaincode query directly (from CLI container)
-docker exec cli peer chaincode query \
-  -C ehr-channel -n ehr-chaincode \
-  -c '{"function":"getPatientRecords","Args":["patient-123"]}'
-
-# Reset everything
-cd blockchain && docker-compose down --volumes --remove-orphans
-rm -rf crypto-config channel-artifacts wallet
+cd backend
+npm install
+npm run dev
 ```
+
+Environment variables used by backend (examples are in `.env.example`):
+- `MONGODB_URI` — MongoDB connection string
+- `IPFS_ENCRYPTION_KEY` — key for AES-256-GCM encryption for IPFS payloads
+- Fabric-related env vars and connection files — ensure `backend/fabric` has the expected connection profile and wallet.
+
+Useful scripts:
+- `npm run dev` — development server (nodemon)
+- `npm start` — production node server
+
+---
+
+## Common commands
+
+- Start with Docker Compose:
+  - `docker compose up --build`
+  - `docker compose down -v` to stop and remove volumes
+- Backend locally:
+  - `cd backend && npm run dev`
+- Frontend locally:
+  - `cd frontend && npm run dev`
+
+---
+
+## Screenshots
+
+Add screenshots to `docs/screenshots/` and reference them here. Example:
+
+```markdown
+![Patient Dashboard](docs/screenshots/patient-dashboard.png)
+```
+
+Suggested screenshots:
+- Patient dashboard (records list)
+- Upload flow (file select + success)
+- Permission manager (grant/revoke)
+- Doctor view (authorized records)
+- Fabric audit logs or chaincode explorer view
+
+---
+
+## Troubleshooting
+
+- Backend cannot connect to Fabric:
+  - Ensure Fabric test-network is running and that the backend has the correct connection profile and wallet credentials. Mount them into the container or run backend on host.
+  - Check `backend/fabric/` and your `.env` for correct paths.
+
+- IPFS encryption errors (decryption failures):
+  - Confirm `IPFS_ENCRYPTION_KEY` is identical between encryption (upload) and decryption (download).
+  - Provide either a 64-character hex key or a passphrase — backend code derives a 32-byte key via SHA-256 if not hex.
+
+- CORS / auth issues:
+  - Ensure frontend `VITE_API_URL` matches backend host and `CLIENT_URL` is set in backend env when using CORS.
+
+- MongoDB auth errors:
+  - If using Docker Compose, confirm `.env` credentials match `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` and that `MONGODB_URI` in `docker-compose.yml` uses them.
+
+- Multer upload errors (file too large / invalid file type):
+  - Default limit is 10 MB. Adjust `backend/middleware/uploadMiddleware.js` limits or increase via environment and Docker Compose as needed.
+
+If you hit issues not covered here, check the service logs:
+
+```bash
+docker compose logs -f backend
+docker compose logs -f mongo
+```
+
+---
+
+## Contributing
+
+Contributions welcome — open issues or PRs. If developing features that touch Fabric or IPFS, please include reproducible steps so reviewers can run the flow locally.
+
+---
+
+## License
+
+Please check repository root for license information. If none exists, contact the project owner.
+# EHR System
+
+Blockchain-based Electronic Health Record management system.
+
+## Tech Stack
+
+- React frontend
+- Node.js backend
+- Hyperledger Fabric chaincode
+- IPFS file storage
+- MongoDB database
+
+## Project Structure
+
+```text
+ehr-system/
+├── frontend/
+│   ├── pages/
+│   ├── components/
+│   ├── services/
+│   └── context/
+├── backend/
+│   ├── controllers/
+│   ├── routes/
+│   ├── middleware/
+│   ├── services/
+│   ├── fabric/
+│   ├── ipfs/
+│   ├── models/
+│   └── uploads/
+├── chaincode/
+│   └── ehr/
+├── scripts/
+├── docs/
+├── README.md
+└── .gitignore
+```
+
+## Modules
+
+- `frontend`: React user interface for patients, doctors, and administrators.
+- `backend`: Node.js API server, authentication, MongoDB models, IPFS integration, and Fabric gateway services.
+- `chaincode/ehr`: Hyperledger Fabric smart contracts for EHR access and audit records.
+- `scripts`: Deployment, setup, and utility scripts.
+- `docs`: Architecture notes, API documentation, and setup guides.
