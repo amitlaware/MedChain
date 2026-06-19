@@ -1,0 +1,113 @@
+{
+  "name": "ehr-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "HospitalMSP",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        }
+      }
+    }
+  },
+  "organizations": {
+    "HospitalMSP": {
+      "mspid": "HospitalMSP",
+      "peers": [
+        "peer0.hospital.ehr.com"
+      ],
+      "certificateAuthorities": [
+        "ca-hospital"
+      ]
+    },
+    "DoctorMSP": {
+      "mspid": "DoctorMSP",
+      "peers": [
+        "peer0.doctor.ehr.com"
+      ],
+      "certificateAuthorities": [
+        "ca-doctor"
+      ]
+    },
+    "PatientMSP": {
+      "mspid": "PatientMSP",
+      "peers": [
+        "peer0.patient.ehr.com"
+      ],
+      "certificateAuthorities": [
+        "ca-patient"
+      ]
+    }
+  },
+  "peers": {
+    "peer0.hospital.ehr.com": {
+      "url": "grpcs://localhost:7051",
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICWDCCAf6gAwIBAgIRAIzvGlNVAp0xdZbHeH94zQcwCgYIKoZIzj0EAwIwdjEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEGhvc3BpdGFsLmVoci5jb20xHzAdBgNVBAMTFnRs\nc2NhLmhvc3BpdGFsLmVoci5jb20wHhcNMjYwNTExMTgwNjAwWhcNMzYwNTA4MTgw\nNjAwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE\nBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQaG9zcGl0YWwuZWhyLmNvbTEfMB0G\nA1UEAxMWdGxzY2EuaG9zcGl0YWwuZWhyLmNvbTBZMBMGByqGSM49AgEGCCqGSM49\nAwEHA0IABKEteUBh/flhgM3hzcPoiWXs1M1j9hTujxP8GmuH8V2s3T0Ik7jffOi/\nzFc71W1W4WP0gUyWmYhU4+BeVCMbnlKjbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNV\nHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNV\nHQ4EIgQgSqzSzZ/wV8p812gGYC/t5dOfs9MGjXLbevqKvQzF67EwCgYIKoZIzj0E\nAwIDSAAwRQIgZR+ht5Dg/mTBXX/pMPeBwUeXqNOu/2OlpZGP49cffB8CIQCi8MD3\nKgHmSq/xc24nuTnMTDeQ7tO6+XbPhKVtBRMXWA==\n-----END CERTIFICATE-----\n"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.hospital.ehr.com",
+        "hostnameOverride": "peer0.hospital.ehr.com"
+      }
+    },
+    "peer0.doctor.ehr.com": {
+      "url": "grpcs://localhost:8051",
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICUDCCAfagAwIBAgIRAJSFy1ngkljvOWEOg1jjr7IwCgYIKoZIzj0EAwIwcjEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xFzAVBgNVBAoTDmRvY3Rvci5laHIuY29tMR0wGwYDVQQDExR0bHNj\nYS5kb2N0b3IuZWhyLmNvbTAeFw0yNjA1MTExODA2MDBaFw0zNjA1MDgxODA2MDBa\nMHIxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMRcwFQYDVQQKEw5kb2N0b3IuZWhyLmNvbTEdMBsGA1UEAxMU\ndGxzY2EuZG9jdG9yLmVoci5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASo\n8jmXx93BC05yalQAUe4eiIvMDe0iR6TgyMfPrfMFcFGQY7WGl2hts8eDkqoQWu8q\nwPEnbmF0GQSVh2mWedfOo20wazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYI\nKwYBBQUHAwIGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEIA4j\nNIBaIfcnMifHRIZUmjIjn65sARiZdrW0hbDmXLgeMAoGCCqGSM49BAMCA0gAMEUC\nIDnT2baDY+dv3b1mELVafKrLQpJ25R8R5i6mAVWND8gTAiEA2na4PA5k4dRnuSJj\nzalfyS5YaQFr2lSck3ruQ8BXlCM=\n-----END CERTIFICATE-----\n"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.doctor.ehr.com",
+        "hostnameOverride": "peer0.doctor.ehr.com"
+      }
+    },
+    "peer0.patient.ehr.com": {
+      "url": "grpcs://localhost:9051",
+      "tlsCACerts": {
+        "pem": "-----BEGIN CERTIFICATE-----\nMIICVDCCAfmgAwIBAgIQeiNkdhylRWlvFEROdZn3HzAKBggqhkjOPQQDAjB0MQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEYMBYGA1UEChMPcGF0aWVudC5laHIuY29tMR4wHAYDVQQDExV0bHNj\nYS5wYXRpZW50LmVoci5jb20wHhcNMjYwNTExMTgwNjAwWhcNMzYwNTA4MTgwNjAw\nWjB0MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEYMBYGA1UEChMPcGF0aWVudC5laHIuY29tMR4wHAYDVQQD\nExV0bHNjYS5wYXRpZW50LmVoci5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC\nAATyabNvkCCF6cc5k7iMu1uJ241lhKe9wrwLjcYb7GsjISrErJk4Ez5lxBexX9LY\nHqp0TrEQRoZYq0NpagNpl43so20wazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYw\nFAYIKwYBBQUHAwIGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIE\nIDZb9Dh+XyCtPEcC4ufd+uZA6dNNXy/B7GulPklX22VXMAoGCCqGSM49BAMCA0kA\nMEYCIQDPAGsD3E0fqh/yJ3GbJ8QgqQCT02yECocDPnNYmTAyJQIhAPAny/6KKPDj\nCKdACfRQJhOOeRkPrITp0vGdzVrfl4aL\n-----END CERTIFICATE-----\n"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.patient.ehr.com",
+        "hostnameOverride": "peer0.patient.ehr.com"
+      }
+    }
+  },
+  "certificateAuthorities": {
+    "ca-hospital": {
+      "url": "https://localhost:7054",
+      "caName": "ca-hospital",
+      "tlsCACerts": {
+        "pem": [
+          "-----BEGIN CERTIFICATE-----\nMIICWDCCAf6gAwIBAgIRAIzvGlNVAp0xdZbHeH94zQcwCgYIKoZIzj0EAwIwdjEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xGTAXBgNVBAoTEGhvc3BpdGFsLmVoci5jb20xHzAdBgNVBAMTFnRs\nc2NhLmhvc3BpdGFsLmVoci5jb20wHhcNMjYwNTExMTgwNjAwWhcNMzYwNTA4MTgw\nNjAwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE\nBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQaG9zcGl0YWwuZWhyLmNvbTEfMB0G\nA1UEAxMWdGxzY2EuaG9zcGl0YWwuZWhyLmNvbTBZMBMGByqGSM49AgEGCCqGSM49\nAwEHA0IABKEteUBh/flhgM3hzcPoiWXs1M1j9hTujxP8GmuH8V2s3T0Ik7jffOi/\nzFc71W1W4WP0gUyWmYhU4+BeVCMbnlKjbTBrMA4GA1UdDwEB/wQEAwIBpjAdBgNV\nHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zApBgNV\nHQ4EIgQgSqzSzZ/wV8p812gGYC/t5dOfs9MGjXLbevqKvQzF67EwCgYIKoZIzj0E\nAwIDSAAwRQIgZR+ht5Dg/mTBXX/pMPeBwUeXqNOu/2OlpZGP49cffB8CIQCi8MD3\nKgHmSq/xc24nuTnMTDeQ7tO6+XbPhKVtBRMXWA==\n-----END CERTIFICATE-----\n"
+        ]
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca-doctor": {
+      "url": "https://localhost:8054",
+      "caName": "ca-doctor",
+      "tlsCACerts": {
+        "pem": [
+          "-----BEGIN CERTIFICATE-----\nMIICUDCCAfagAwIBAgIRAJSFy1ngkljvOWEOg1jjr7IwCgYIKoZIzj0EAwIwcjEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xFzAVBgNVBAoTDmRvY3Rvci5laHIuY29tMR0wGwYDVQQDExR0bHNj\nYS5kb2N0b3IuZWhyLmNvbTAeFw0yNjA1MTExODA2MDBaFw0zNjA1MDgxODA2MDBa\nMHIxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T\nYW4gRnJhbmNpc2NvMRcwFQYDVQQKEw5kb2N0b3IuZWhyLmNvbTEdMBsGA1UEAxMU\ndGxzY2EuZG9jdG9yLmVoci5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASo\n8jmXx93BC05yalQAUe4eiIvMDe0iR6TgyMfPrfMFcFGQY7WGl2hts8eDkqoQWu8q\nwPEnbmF0GQSVh2mWedfOo20wazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYwFAYI\nKwYBBQUHAwIGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEIA4j\nNIBaIfcnMifHRIZUmjIjn65sARiZdrW0hbDmXLgeMAoGCCqGSM49BAMCA0gAMEUC\nIDnT2baDY+dv3b1mELVafKrLQpJ25R8R5i6mAVWND8gTAiEA2na4PA5k4dRnuSJj\nzalfyS5YaQFr2lSck3ruQ8BXlCM=\n-----END CERTIFICATE-----\n"
+        ]
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca-patient": {
+      "url": "https://localhost:9054",
+      "caName": "ca-patient",
+      "tlsCACerts": {
+        "pem": [
+          "-----BEGIN CERTIFICATE-----\nMIICVDCCAfmgAwIBAgIQeiNkdhylRWlvFEROdZn3HzAKBggqhkjOPQQDAjB0MQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEYMBYGA1UEChMPcGF0aWVudC5laHIuY29tMR4wHAYDVQQDExV0bHNj\nYS5wYXRpZW50LmVoci5jb20wHhcNMjYwNTExMTgwNjAwWhcNMzYwNTA4MTgwNjAw\nWjB0MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN\nU2FuIEZyYW5jaXNjbzEYMBYGA1UEChMPcGF0aWVudC5laHIuY29tMR4wHAYDVQQD\nExV0bHNjYS5wYXRpZW50LmVoci5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC\nAATyabNvkCCF6cc5k7iMu1uJ241lhKe9wrwLjcYb7GsjISrErJk4Ez5lxBexX9LY\nHqp0TrEQRoZYq0NpagNpl43so20wazAOBgNVHQ8BAf8EBAMCAaYwHQYDVR0lBBYw\nFAYIKwYBBQUHAwIGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIE\nIDZb9Dh+XyCtPEcC4ufd+uZA6dNNXy/B7GulPklX22VXMAoGCCqGSM49BAMCA0kA\nMEYCIQDPAGsD3E0fqh/yJ3GbJ8QgqQCT02yECocDPnNYmTAyJQIhAPAny/6KKPDj\nCKdACfRQJhOOeRkPrITp0vGdzVrfl4aL\n-----END CERTIFICATE-----\n"
+        ]
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    }
+  }
+}

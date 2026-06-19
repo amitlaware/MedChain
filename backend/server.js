@@ -1,7 +1,9 @@
+// Trigger nodemon restart 2
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import morgan from "morgan";
+import fs from "fs";
 import authRoutes from "./routes/authRoutes.js";
 import recordRoutes from "./routes/recordRoutes.js";
 import hospitalRoutes from "./routes/hospitalRoutes.js";
@@ -44,10 +46,13 @@ app.use((req, res) => {
 
 app.use((error, _req, res, _next) => {
   console.error(error);
+  try {
+    fs.appendFileSync('d:\\MedChain2\\MedChain\\error.log', new Date().toISOString() + '\\n' + (error.stack || error.message) + '\\n\\n');
+  } catch(e) {}
   const statusCode = error.statusCode || 500;
 
   res.status(error.statusCode || 500).json({
-    message: statusCode === 500 ? "Internal server error" : error.message
+    message: error.message || "Internal server error"
   });
 });
 

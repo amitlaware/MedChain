@@ -25,7 +25,16 @@ export async function submitTransaction(functionName, ...args) {
     if (error.responses) {
       console.error("Peer responses:", JSON.stringify(error.responses));
     }
-    throw error;
+    
+    // Extract the actual chaincode error message if possible
+    let msg = error.message;
+    if (error.responses && error.responses.length > 0) {
+      msg = error.responses[0].response?.message || msg;
+    }
+    
+    const httpError = new Error(msg);
+    httpError.statusCode = 400; // Map chaincode logic errors to Bad Request
+    throw httpError;
   } finally {
     gateway.disconnect();
   }

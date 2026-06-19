@@ -14,6 +14,7 @@ export default function RecordsList({ forPatientId, onSelectRecord }) {
   const [selectedHospital, setSelectedHospital] = useState("");
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [transferring, setTransferring] = useState(false);
 
   // Get the record being transferred safely
   const transferringRecord = transferringId ? records.find(r => (r.recordId || r._id) === transferringId) : null;
@@ -94,6 +95,7 @@ export default function RecordsList({ forPatientId, onSelectRecord }) {
   async function confirmTransfer() {
     if (!selectedHospital || !transferringRecord) return;
     setError("");
+    setTransferring(true);
 
     try {
       const payload = {
@@ -108,6 +110,8 @@ export default function RecordsList({ forPatientId, onSelectRecord }) {
       setTransferringId(null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Request failed");
+    } finally {
+      setTransferring(false);
     }
   }
 
@@ -161,7 +165,9 @@ export default function RecordsList({ forPatientId, onSelectRecord }) {
             )}
 
             <div className="flex gap-2">
-              <button onClick={confirmTransfer} disabled={!selectedHospital} className="rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50">Confirm</button>
+              <button onClick={confirmTransfer} disabled={!selectedHospital || transferring} className="rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50">
+                {transferring ? "Confirming..." : "Confirm"}
+              </button>
               <button onClick={() => setTransferringId(null)} className="rounded-lg bg-white border border-amber-200 px-4 py-2.5 text-sm font-bold text-amber-700 hover:bg-amber-100">Cancel</button>
             </div>
           </div>
